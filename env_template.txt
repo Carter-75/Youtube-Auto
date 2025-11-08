@@ -1,0 +1,17 @@
+# Copy this file to .env and fill in your actual API keys
+# DO NOT commit .env to git
+
+# Suno API Key
+# Get from: https://suno.ai
+SUNO_API_KEY=your_suno_api_key_here
+
+# OpenAI API Key
+# Get from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=your_openai_api_key_here
+
+# YouTube Data API OAuth Credentials
+# Get from: https://console.cloud.google.com/apis/credentials
+YOUTUBE_CLIENT_ID=your_youtube_client_id_here
+YOUTUBE_CLIENT_SECRET=your_youtube_client_secret_here
+YOUTUBE_REFRESH_TOKEN=your_youtube_refresh_token_here
+
