@@ -27,7 +27,7 @@ This automation pipeline:
 
 ## Setup
 
-(Make sure you are in **C:\Users\carte\OneDrive\Desktop\Code\Portfolio-Websites (Mostly)\Youtube-Auto**)
+(Make sure you are in **"C:\Users\carte\OneDrive\Desktop\Code\Portfolio-Websites (Mostly)\Youtube-Auto"**)
 
 ### 1. Install Python Dependencies
 
