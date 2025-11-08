@@ -1,11 +1,14 @@
 """
 Main Orchestration Script for Automated Lo-Fi YouTube Channel
+
+WINDOWS ONLY - This project is designed for Windows operating systems
 """
 import os
 import sys
 import json
 import time
 import logging
+import platform
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,6 +17,7 @@ from dotenv import load_dotenv
 from suno import SunoAPI, create_lofi_prompt
 from openai_gen import OpenAIGenerator
 from youtube_upload import YouTubeUploader
+from wake_lock import WakeLock
 
 # Configure logging
 logging.basicConfig(
@@ -137,6 +141,7 @@ class LoFiAutomation:
     def run_pipeline(self, custom_prompt: str = None) -> Dict:
         """
         Execute complete automation pipeline
+        Wake lock is acquired during execution to prevent system sleep
         
         Args:
             custom_prompt: Optional custom music generation prompt
@@ -154,6 +159,10 @@ class LoFiAutomation:
         logger.info("="*70)
         logger.info(f"Starting new lo-fi video generation pipeline: {timestamp_id}")
         logger.info("="*70)
+        
+        # Acquire wake lock to prevent system sleep during generation
+        wake_lock = WakeLock("LoFiAutomation-Pipeline")
+        wake_lock.acquire()
         
         try:
             # STEP 1: Generate music prompt
@@ -224,10 +233,14 @@ class LoFiAutomation:
         except Exception as e:
             logger.error(f"Pipeline failed: {e}", exc_info=True)
             raise
+        finally:
+            # Always release wake lock when pipeline finishes (success or failure)
+            wake_lock.release()
     
     def run_multiple(self, count: int, delay_seconds: int = 60):
         """
         Run pipeline multiple times
+        Wake lock is released during delays to allow system sleep
         
         Args:
             count: Number of videos to generate
@@ -244,11 +257,15 @@ class LoFiAutomation:
             logger.info(f"{'='*70}\n")
             
             try:
+                # run_pipeline() handles its own wake lock
                 self.run_pipeline()
                 successful += 1
                 
                 if i < count - 1:  # Don't delay after last video
-                    logger.info(f"Waiting {delay_seconds} seconds before next generation...")
+                    # Wake lock is automatically released by run_pipeline()
+                    # System can sleep during delay period
+                    logger.info(f"[SLEEP] Waiting {delay_seconds} seconds before next generation...")
+                    logger.info(f"System can sleep during this delay period")
                     time.sleep(delay_seconds)
                     
             except Exception as e:
@@ -264,10 +281,19 @@ class LoFiAutomation:
 
 def main():
     """Main entry point"""
+    # Check if running on Windows
+    if platform.system() != "Windows":
+        print("=" * 60)
+        print("ERROR: This project only supports Windows")
+        print(f"Detected OS: {platform.system()}")
+        print("=" * 60)
+        sys.exit(1)
+    
     print("""
     ╔══════════════════════════════════════════════════════════╗
     ║   Automated Lo-Fi YouTube Channel Generator              ║
     ║   Powered by Suno + OpenAI + YouTube API                 ║
+    ║   WINDOWS ONLY                                           ║
     ╚══════════════════════════════════════════════════════════╝
     """)
     

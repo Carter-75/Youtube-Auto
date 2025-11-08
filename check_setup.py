@@ -1,20 +1,33 @@
 """
 Setup verification script - checks if all dependencies and APIs are ready
 Run this before running the main automation
+
+WINDOWS ONLY - This project is designed for Windows operating systems
 """
 import sys
 import subprocess
+import platform
 from pathlib import Path
+
+
+def check_windows():
+    """Check if running on Windows"""
+    if platform.system() == "Windows":
+        print(f"[OK] Windows detected: {platform.version()}")
+        return True
+    else:
+        print(f"[ERROR] This project requires Windows (detected: {platform.system()})")
+        return False
 
 
 def check_python_version():
     """Check if Python version is 3.11+"""
     version = sys.version_info
     if version.major >= 3 and version.minor >= 11:
-        print("✅ Python version:", f"{version.major}.{version.minor}.{version.micro}")
+        print("[OK] Python version:", f"{version.major}.{version.minor}.{version.micro}")
         return True
     else:
-        print(f"❌ Python 3.11+ required, you have {version.major}.{version.minor}.{version.micro}")
+        print(f"[ERROR] Python 3.11+ required, you have {version.major}.{version.minor}.{version.micro}")
         return False
 
 
@@ -34,13 +47,13 @@ def check_dependencies():
     for package in required:
         try:
             __import__(package)
-            print(f"✅ {package}")
+            print(f"[OK] {package}")
         except ImportError:
-            print(f"❌ {package} - missing")
+            print(f"[MISSING] {package}")
             missing.append(package)
     
     if missing:
-        print("\n⚠️  Install missing packages with: pip install -r requirements.txt")
+        print("\n[WARNING] Install missing packages with: pip install -r requirements.txt")
         return False
     return True
 
@@ -56,17 +69,17 @@ def check_ffmpeg():
         )
         if result.returncode == 0:
             version_line = result.stdout.split('\n')[0]
-            print(f"✅ FFmpeg: {version_line}")
+            print(f"[OK] FFmpeg: {version_line}")
             return True
         else:
-            print("❌ FFmpeg: installed but not working properly")
+            print("[ERROR] FFmpeg: installed but not working properly")
             return False
     except FileNotFoundError:
-        print("❌ FFmpeg: not found")
+        print("[ERROR] FFmpeg: not found")
         print("   Install: https://ffmpeg.org/download.html")
         return False
     except Exception as e:
-        print(f"❌ FFmpeg: error checking - {e}")
+        print(f"[ERROR] FFmpeg: error checking - {e}")
         return False
 
 
@@ -75,8 +88,8 @@ def check_env_file():
     env_path = Path('.env')
     
     if not env_path.exists():
-        print("❌ .env file not found")
-        print("   Create one by copying .env.example")
+        print("[ERROR] .env file not found")
+        print("   Create one by copying env_template.txt")
         return False
     
     with open(env_path, 'r') as f:
@@ -99,15 +112,15 @@ def check_env_file():
             placeholder_keys.append(key)
     
     if missing_keys:
-        print(f"❌ .env file missing keys: {', '.join(missing_keys)}")
+        print(f"[ERROR] .env file missing keys: {', '.join(missing_keys)}")
         return False
     
     if placeholder_keys:
-        print(f"⚠️  .env has placeholder values for: {', '.join(placeholder_keys)}")
+        print(f"[WARNING] .env has placeholder values for: {', '.join(placeholder_keys)}")
         print("   Replace with your actual API keys")
         return False
     
-    print("✅ .env file configured")
+    print("[OK] .env file configured")
     return True
 
 
@@ -119,9 +132,9 @@ def check_directories():
     for dir_name in dirs:
         dir_path = Path(dir_name)
         if dir_path.exists():
-            print(f"✅ {dir_name}/ folder")
+            print(f"[OK] {dir_name}/ folder")
         else:
-            print(f"❌ {dir_name}/ folder missing")
+            print(f"[ERROR] {dir_name}/ folder missing")
             all_exist = False
     
     return all_exist
@@ -129,11 +142,13 @@ def check_directories():
 
 def main():
     print("=" * 60)
-    print("🔍 Setup Verification for Lo-Fi Automation")
+    print("Setup Verification for Lo-Fi Automation")
+    print("WINDOWS ONLY PROJECT")
     print("=" * 60)
     print()
     
     checks = [
+        ("Windows OS", check_windows),
         ("Python Version", check_python_version),
         ("Python Dependencies", check_dependencies),
         ("FFmpeg", check_ffmpeg),
@@ -151,11 +166,11 @@ def main():
     print("\n" + "=" * 60)
     
     if all(results):
-        print("🎉 All checks passed! You're ready to run the automation.")
+        print("[SUCCESS] All checks passed! You're ready to run the automation.")
         print("   Run: python runner.py")
     else:
-        print("⚠️  Some checks failed. Fix the issues above before running.")
-        print("   See SETUP_GUIDE.md for help")
+        print("[WARNING] Some checks failed. Fix the issues above before running.")
+        print("   See README.md for help")
     
     print("=" * 60)
     
