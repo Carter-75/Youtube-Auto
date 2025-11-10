@@ -11,6 +11,7 @@ import logging
 import platform
 from datetime import datetime
 from pathlib import Path
+from typing import Dict
 from dotenv import load_dotenv
 
 # Import our modules
