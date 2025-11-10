@@ -95,7 +95,7 @@ python check_setup.py
 OR from PowerShell (as admin):
 
 ```powershell
-cd "C:\path\to\Youtube-Auto"
+cd "C:\Users\carte\OneDrive\Desktop\Code\Portfolio-Websites (Mostly)\Youtube-Auto"
 .\run_admin.bat
 ```
 
@@ -110,7 +110,7 @@ You'll be prompted for:
 OR from PowerShell (as admin):
 
 ```powershell
-cd "C:\path\to\Youtube-Auto"
+cd "C:\Users\carte\OneDrive\Desktop\Code\Portfolio-Websites (Mostly)\Youtube-Auto"
 .\run_admin_loop.bat
 ```
 
