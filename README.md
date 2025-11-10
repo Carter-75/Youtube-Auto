@@ -57,7 +57,10 @@ Edit `.env` and add your API keys:
 2. Click "Sign Up" and create an account
 3. Navigate to your dashboard
 4. Generate an API key
-5. Copy the key to `.env` as `COMET_API_KEY`
+5. **Add funds/recharge** your account (minimum $5-$10 recommended)
+   - Cost: $0.144 per song
+   - You get $1 free credit (~7 songs)
+6. Copy the key to `.env` as `COMET_API_KEY`
 
 **OpenAI API** (https://platform.openai.com/api-keys)
 - Create account, generate API key

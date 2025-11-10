@@ -62,6 +62,15 @@ class SunoAPI:
                 json=payload,
                 timeout=30
             )
+            
+            # Check response before raising for status
+            if response.status_code != 200:
+                try:
+                    error_detail = response.json()
+                    logger.error(f"API Error Response: {error_detail}")
+                except:
+                    logger.error(f"API Error Response (raw): {response.text}")
+            
             response.raise_for_status()
             
             result = response.json()
