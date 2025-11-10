@@ -28,13 +28,14 @@ class SunoAPI:
     def generate_music(self, prompt: str, duration: int = 120) -> Dict:
         """
         Generate lo-fi music using CometAPI (Suno)
+        Uses the correct endpoint structure: submit task, then poll for completion
         
         Args:
             prompt: Text description of the music to generate
             duration: Length of track in seconds (default 120 = 2 minutes)
         
         Returns:
-            Dictionary with generation data
+            Dictionary with generation data including audio URL
         """
         logger.info(f"Generating music with prompt: {prompt}")
         
@@ -42,30 +43,68 @@ class SunoAPI:
         from datetime import datetime
         title = f"Lo-Fi Study Music {datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
+        # Use inspiration mode with gpt_description_prompt for instrumental
         payload = {
-            "prompt": prompt,
-            "tags": "lofi, study music, chill beats",
-            "title": title,
+            "gpt_description_prompt": prompt,
+            "mv": "chirp-auk",  # Suno v4.5
+            "prompt": "",
             "make_instrumental": True,
-            "wait_audio": True
+            "title": title,
+            "tags": "lofi, study music, chill beats"
         }
         
         try:
+            # Step 1: Submit the music generation task
+            logger.info("Submitting music generation task to CometAPI...")
             response = requests.post(
-                f"{self.base_url}/api/custom_generate",
+                f"{self.base_url}/suno/submit/music",
                 headers=self.headers,
                 json=payload,
-                timeout=180  # CometAPI can take longer with wait_audio=True
+                timeout=30
             )
             response.raise_for_status()
             
-            data = response.json()
+            result = response.json()
             
-            if not data or 'data' not in data:
-                raise ValueError("Invalid response from CometAPI")
+            if result.get('code') != 'success' or not result.get('data'):
+                raise ValueError(f"Task submission failed: {result}")
             
-            logger.info(f"Music generation completed successfully")
-            return data
+            task_id = result['data']
+            logger.info(f"Task submitted successfully. Task ID: {task_id}")
+            
+            # Step 2: Poll for completion
+            logger.info("Waiting for music generation to complete...")
+            max_attempts = 60  # 5 minutes max (60 * 5 seconds)
+            attempt = 0
+            
+            while attempt < max_attempts:
+                attempt += 1
+                time.sleep(5)  # Wait 5 seconds between polls
+                
+                fetch_response = requests.get(
+                    f"{self.base_url}/suno/fetch/{task_id}",
+                    headers=self.headers,
+                    timeout=30
+                )
+                fetch_response.raise_for_status()
+                
+                fetch_data = fetch_response.json()
+                
+                if fetch_data.get('code') == 'success' and fetch_data.get('data'):
+                    data = fetch_data['data']
+                    status = data.get('status', '')
+                    
+                    if status == 'complete':
+                        logger.info(f"Music generation completed successfully!")
+                        return data
+                    elif status == 'error':
+                        raise ValueError(f"Music generation failed: {data.get('error_message', 'Unknown error')}")
+                    else:
+                        logger.info(f"Status: {status} (attempt {attempt}/{max_attempts})")
+                else:
+                    logger.warning(f"Unexpected fetch response: {fetch_data}")
+            
+            raise TimeoutError("Music generation timed out after 5 minutes")
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to generate music: {e}")
@@ -116,13 +155,26 @@ class SunoAPI:
         result_data = self.generate_music(prompt, duration)
         
         # Extract audio URL from response
-        # CometAPI returns data in format: {"data": [{"audio_url": "..."}]}
-        if 'data' in result_data and len(result_data['data']) > 0:
-            audio_url = result_data['data'][0].get('audio_url')
-            if not audio_url:
-                raise ValueError("No audio URL in response data")
-        else:
-            raise ValueError("Invalid response structure from CometAPI")
+        # New CometAPI structure: result_data contains clips array
+        audio_url = None
+        
+        # Try to find audio_url in the response
+        if isinstance(result_data, dict):
+            # Check for clips array (most common structure)
+            if 'clips' in result_data and len(result_data['clips']) > 0:
+                audio_url = result_data['clips'][0].get('audio_url')
+            # Check for direct audio_url
+            elif 'audio_url' in result_data:
+                audio_url = result_data['audio_url']
+            # Check for data array (older structure)
+            elif 'data' in result_data and len(result_data['data']) > 0:
+                audio_url = result_data['data'][0].get('audio_url')
+        
+        if not audio_url:
+            logger.error(f"Could not find audio_url in response: {result_data}")
+            raise ValueError("No audio URL in response data")
+        
+        logger.info(f"Found audio URL: {audio_url}")
         
         # Download audio
         return self.download_audio(audio_url, output_path)

@@ -53,7 +53,6 @@ class YouTubeUploader:
         # If no valid creds, run OAuth flow
         if not creds:
             logger.info("Starting OAuth2 flow...")
-            logger.info("After authenticating, please manually add the refresh token to your .env file")
             
             # Create client config
             client_config = {
@@ -69,16 +68,46 @@ class YouTubeUploader:
             flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
             creds = flow.run_local_server(port=0)
             
-            # Display the refresh token for user to add to .env
+            # Automatically save the refresh token to .env file
             if creds and creds.refresh_token:
+                self._save_refresh_token_to_env(creds.refresh_token)
                 logger.info("=" * 70)
-                logger.info("IMPORTANT: Add this refresh token to your .env file:")
-                logger.info(f"YOUTUBE_REFRESH_TOKEN={creds.refresh_token}")
+                logger.info("✅ Refresh token automatically saved to .env file")
                 logger.info("=" * 70)
-                logger.info("This will allow automatic authentication in future runs.")
         
         self.youtube = build('youtube', 'v3', credentials=creds)
         logger.info("Successfully authenticated with YouTube API")
+    
+    def _save_refresh_token_to_env(self, refresh_token: str):
+        """Save refresh token to .env file automatically"""
+        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+        
+        # Read existing .env content
+        if os.path.exists(env_path):
+            with open(env_path, 'r') as f:
+                lines = f.readlines()
+            
+            # Check if YOUTUBE_REFRESH_TOKEN already exists
+            token_exists = False
+            for i, line in enumerate(lines):
+                if line.startswith('YOUTUBE_REFRESH_TOKEN='):
+                    lines[i] = f'YOUTUBE_REFRESH_TOKEN={refresh_token}\n'
+                    token_exists = True
+                    break
+            
+            # If it doesn't exist, add it
+            if not token_exists:
+                lines.append(f'\nYOUTUBE_REFRESH_TOKEN={refresh_token}\n')
+            
+            # Write back to .env
+            with open(env_path, 'w') as f:
+                f.writelines(lines)
+        else:
+            # Create new .env file with the token
+            with open(env_path, 'w') as f:
+                f.write(f'YOUTUBE_REFRESH_TOKEN={refresh_token}\n')
+        
+        logger.info(f"Refresh token saved to {env_path}")
     
     @retry(tries=3, delay=10, backoff=2)
     def upload_video(
