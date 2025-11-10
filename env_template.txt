@@ -1,9 +1,9 @@
 # Copy this file to .env and fill in your actual API keys
 # DO NOT commit .env to git
 
-# Suno API Key
-# Get from: https://suno.ai
-SUNO_API_KEY=your_suno_api_key_here
+# CometAPI Key (for Suno music generation)
+# Get from: https://cometapi.com
+COMET_API_KEY=your_comet_api_key_here
 
 # OpenAI API Key
 # Get from: https://platform.openai.com/api-keys

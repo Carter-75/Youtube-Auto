@@ -1,5 +1,6 @@
 """
-Suno API Integration for Lo-Fi Music Generation
+CometAPI Integration for Lo-Fi Music Generation (Suno Music API)
+CometAPI provides unofficial access to Suno's music generation capabilities
 """
 import os
 import time
@@ -13,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class SunoAPI:
-    """Handle Suno API music generation"""
+    """Handle CometAPI music generation using Suno AI"""
     
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = "https://api.suno.ai/v1"
+        self.base_url = "https://api.cometapi.com"
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
@@ -26,83 +27,43 @@ class SunoAPI:
     @retry(tries=3, delay=5, backoff=2)
     def generate_music(self, prompt: str, duration: int = 120) -> Dict:
         """
-        Generate lo-fi music using Suno API
+        Generate lo-fi music using CometAPI (Suno)
         
         Args:
             prompt: Text description of the music to generate
             duration: Length of track in seconds (default 120 = 2 minutes)
         
         Returns:
-            Dictionary with generation_id and other metadata
+            Dictionary with generation data
         """
         logger.info(f"Generating music with prompt: {prompt}")
         
         payload = {
             "prompt": prompt,
-            "duration": duration,
-            "instrumental": True,
-            "genre": "lofi"
+            "make_instrumental": True,
+            "wait_audio": True,
+            "tags": "lofi, study music, chill beats"
         }
         
         try:
             response = requests.post(
-                f"{self.base_url}/generate",
+                f"{self.base_url}/api/custom_generate",
                 headers=self.headers,
                 json=payload,
-                timeout=30
+                timeout=180  # CometAPI can take longer with wait_audio=True
             )
             response.raise_for_status()
             
             data = response.json()
-            generation_id = data.get("id")
             
-            if not generation_id:
-                raise ValueError("No generation ID returned from Suno API")
+            if not data or 'data' not in data:
+                raise ValueError("Invalid response from CometAPI")
             
-            logger.info(f"Music generation started. ID: {generation_id}")
+            logger.info(f"Music generation completed successfully")
             return data
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to generate music: {e}")
-            raise
-    
-    @retry(tries=10, delay=10, backoff=1.5)
-    def wait_for_completion(self, generation_id: str) -> Dict:
-        """
-        Poll Suno API until music generation is complete
-        
-        Args:
-            generation_id: ID of the generation task
-        
-        Returns:
-            Complete generation data including audio URL
-        """
-        logger.info(f"Waiting for generation {generation_id} to complete...")
-        
-        try:
-            response = requests.get(
-                f"{self.base_url}/generate/{generation_id}",
-                headers=self.headers,
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            data = response.json()
-            status = data.get("status")
-            
-            logger.info(f"Generation status: {status}")
-            
-            if status == "completed":
-                logger.info("Music generation completed!")
-                return data
-            elif status == "failed":
-                raise Exception(f"Music generation failed: {data.get('error', 'Unknown error')}")
-            else:
-                # Still processing, raise to trigger retry
-                raise Exception("Generation still in progress")
-                
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to check generation status: {e}")
             raise
     
     @retry(tries=3, delay=5, backoff=2)
@@ -141,22 +102,22 @@ class SunoAPI:
         Args:
             prompt: Music generation prompt
             output_path: Where to save the audio file
-            duration: Track duration in seconds
+            duration: Track duration in seconds (note: actual duration controlled by Suno)
         
         Returns:
             Path to downloaded audio file
         """
-        # Start generation
-        generation_data = self.generate_music(prompt, duration)
-        generation_id = generation_data.get("id")
+        # Generate music
+        result_data = self.generate_music(prompt, duration)
         
-        # Wait for completion
-        completed_data = self.wait_for_completion(generation_id)
-        
-        # Get audio URL
-        audio_url = completed_data.get("audio_url")
-        if not audio_url:
-            raise ValueError("No audio URL in completed generation data")
+        # Extract audio URL from response
+        # CometAPI returns data in format: {"data": [{"audio_url": "..."}]}
+        if 'data' in result_data and len(result_data['data']) > 0:
+            audio_url = result_data['data'][0].get('audio_url')
+            if not audio_url:
+                raise ValueError("No audio URL in response data")
+        else:
+            raise ValueError("Invalid response structure from CometAPI")
         
         # Download audio
         return self.download_audio(audio_url, output_path)
@@ -201,4 +162,3 @@ def create_lofi_prompt() -> str:
     
     prompt = f"Lofi study music, {tempo}, {ambience}, {instrument}, {mood}"
     return prompt
-

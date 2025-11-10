@@ -8,7 +8,7 @@
 
 This automation pipeline:
 
-1. **Generates lo-fi music** using Suno API
+1. **Generates lo-fi music** using CometAPI (Suno Music API)
 2. **Downloads audio** as MP3
 3. **Creates metadata** (title, description, tags) using OpenAI GPT-4
 4. **Generates thumbnail** (1280x720) using DALL-E 3
@@ -52,8 +52,12 @@ Copy-Item env_template.txt .env
 
 Edit `.env` and add your API keys:
 
-**Suno API** (https://suno.ai)
-- Sign up, subscribe to a plan, generate API key
+**CometAPI (for Suno Music)** (https://cometapi.com)
+1. Go to https://cometapi.com
+2. Click "Sign Up" and create an account
+3. Navigate to your dashboard
+4. Generate an API key
+5. Copy the key to `.env` as `COMET_API_KEY`
 
 **OpenAI API** (https://platform.openai.com/api-keys)
 - Create account, generate API key
@@ -67,7 +71,7 @@ Edit `.env` and add your API keys:
 
 Your `.env` should look like:
 ```env
-SUNO_API_KEY=your_actual_suno_key
+COMET_API_KEY=your_comet_api_key_here
 OPENAI_API_KEY=sk-your_actual_openai_key
 YOUTUBE_CLIENT_ID=your_google_client_id
 YOUTUBE_CLIENT_SECRET=your_google_client_secret

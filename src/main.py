@@ -39,7 +39,7 @@ class LoFiAutomation:
         load_dotenv()
         
         # Load API keys
-        self.suno_key = os.getenv('SUNO_API_KEY')
+        self.suno_key = os.getenv('COMET_API_KEY')
         self.openai_key = os.getenv('OPENAI_API_KEY')
         self.youtube_client_id = os.getenv('YOUTUBE_CLIENT_ID')
         self.youtube_client_secret = os.getenv('YOUTUBE_CLIENT_SECRET')
@@ -72,7 +72,7 @@ class LoFiAutomation:
     def _validate_env_vars(self):
         """Validate that all required environment variables are set"""
         required_vars = {
-            'SUNO_API_KEY': self.suno_key,
+            'COMET_API_KEY': self.suno_key,
             'OPENAI_API_KEY': self.openai_key,
             'YOUTUBE_CLIENT_ID': self.youtube_client_id,
             'YOUTUBE_CLIENT_SECRET': self.youtube_client_secret

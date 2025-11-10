@@ -96,7 +96,7 @@ def check_env_file():
         content = f.read()
     
     required_keys = [
-        'SUNO_API_KEY',
+        'COMET_API_KEY',
         'OPENAI_API_KEY',
         'YOUTUBE_CLIENT_ID',
         'YOUTUBE_CLIENT_SECRET'
