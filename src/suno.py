@@ -38,11 +38,16 @@ class SunoAPI:
         """
         logger.info(f"Generating music with prompt: {prompt}")
         
+        # Generate a simple title based on timestamp
+        from datetime import datetime
+        title = f"Lo-Fi Study Music {datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
         payload = {
             "prompt": prompt,
+            "tags": "lofi, study music, chill beats",
+            "title": title,
             "make_instrumental": True,
-            "wait_audio": True,
-            "tags": "lofi, study music, chill beats"
+            "wait_audio": True
         }
         
         try:

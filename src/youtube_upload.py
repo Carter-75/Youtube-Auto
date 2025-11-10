@@ -3,7 +3,6 @@ YouTube Data API v3 Integration for Video Upload
 """
 import os
 import logging
-import pickle
 from typing import Dict, Optional
 from retry import retry
 from google.auth.transport.requests import Request
@@ -32,48 +31,51 @@ class YouTubeUploader:
     def _authenticate(self):
         """Authenticate with YouTube API using OAuth2"""
         creds = None
-        token_path = 'token.pickle'
         
-        # Try to load existing credentials
-        if os.path.exists(token_path):
-            with open(token_path, 'rb') as token:
-                creds = pickle.load(token)
+        # If we have a refresh token from .env, use it
+        if self.refresh_token:
+            # Create credentials from refresh token
+            logger.info("Using refresh token from .env file...")
+            creds = Credentials(
+                None,
+                refresh_token=self.refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=self.client_id,
+                client_secret=self.client_secret
+            )
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                logger.error(f"Failed to refresh token: {e}")
+                logger.info("Refresh token may be invalid. Please run OAuth flow again.")
+                creds = None
         
-        # If no valid creds, use refresh token or run OAuth flow
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                logger.info("Refreshing access token...")
-                creds.refresh(Request())
-            elif self.refresh_token:
-                # Create credentials from refresh token
-                logger.info("Creating credentials from refresh token...")
-                creds = Credentials(
-                    None,
-                    refresh_token=self.refresh_token,
-                    token_uri="https://oauth2.googleapis.com/token",
-                    client_id=self.client_id,
-                    client_secret=self.client_secret
-                )
-                creds.refresh(Request())
-            else:
-                logger.info("Starting OAuth2 flow...")
-                # Create client config
-                client_config = {
-                    "installed": {
-                        "client_id": self.client_id,
-                        "client_secret": self.client_secret,
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                        "redirect_uris": ["http://localhost"]
-                    }
-                }
-                
-                flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-                creds = flow.run_local_server(port=0)
+        # If no valid creds, run OAuth flow
+        if not creds:
+            logger.info("Starting OAuth2 flow...")
+            logger.info("After authenticating, please manually add the refresh token to your .env file")
             
-            # Save credentials for future use
-            with open(token_path, 'wb') as token:
-                pickle.dump(creds, token)
+            # Create client config
+            client_config = {
+                "installed": {
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": ["http://localhost"]
+                }
+            }
+            
+            flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+            creds = flow.run_local_server(port=0)
+            
+            # Display the refresh token for user to add to .env
+            if creds and creds.refresh_token:
+                logger.info("=" * 70)
+                logger.info("IMPORTANT: Add this refresh token to your .env file:")
+                logger.info(f"YOUTUBE_REFRESH_TOKEN={creds.refresh_token}")
+                logger.info("=" * 70)
+                logger.info("This will allow automatic authentication in future runs.")
         
         self.youtube = build('youtube', 'v3', credentials=creds)
         logger.info("Successfully authenticated with YouTube API")

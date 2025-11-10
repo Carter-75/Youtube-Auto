@@ -14,5 +14,6 @@ venv/
 .idea/
 *.log
 token.json
+token.pickle
 client_secret.json
 
